@@ -41,46 +41,46 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBG1xV4-YiyHcW9ex4kgM8LjaNTGBjbzWg',
-    appId: '1:315538866870:web:e11477ced40937b6075c17',
-    messagingSenderId: '315538866870',
-    projectId: 'isisubuh-c7338',
-    authDomain: 'isisubuh-c7338.firebaseapp.com',
-    storageBucket: 'isisubuh-c7338.firebasestorage.app',
+    apiKey: 'AIzaSyAdkrsqhQZTmHs7-LaUtOA17I81DFxAXVE',
+    appId: '1:1092823951598:web:a07a6aadc948e63138ebff',
+    messagingSenderId: '1092823951598',
+    projectId: 'zoofeed-1a620',
+    authDomain: 'zoofeed-1a620.firebaseapp.com',
+    storageBucket: 'zoofeed-1a620.firebasestorage.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyC03WdOtOlgbD0m8BPO3Nh6DUXPpH7Xn6c',
-    appId: '1:315538866870:android:2f01d0af0a83580b075c17',
-    messagingSenderId: '315538866870',
-    projectId: 'isisubuh-c7338',
-    storageBucket: 'isisubuh-c7338.firebasestorage.app',
+    apiKey: 'AIzaSyCkq7wp4ZMutFFndg4sIOUETAZyIGm63Pg',
+    appId: '1:1092823951598:android:925a74dc8d8a60e638ebff',
+    messagingSenderId: '1092823951598',
+    projectId: 'zoofeed-1a620',
+    storageBucket: 'zoofeed-1a620.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBY5EI26e-MnOYpfBeltJiYmUyFJc89C9o',
-    appId: '1:315538866870:ios:dae108f09a723654075c17',
-    messagingSenderId: '315538866870',
-    projectId: 'isisubuh-c7338',
-    storageBucket: 'isisubuh-c7338.firebasestorage.app',
+    apiKey: 'AIzaSyAECVixFNbkHE1X__V2CWA_vxOXxpVo7HQ',
+    appId: '1:1092823951598:ios:efa7acd1073d138838ebff',
+    messagingSenderId: '1092823951598',
+    projectId: 'zoofeed-1a620',
+    storageBucket: 'zoofeed-1a620.firebasestorage.app',
     iosBundleId: 'com.example.zoofeed',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyBY5EI26e-MnOYpfBeltJiYmUyFJc89C9o',
-    appId: '1:315538866870:ios:dae108f09a723654075c17',
-    messagingSenderId: '315538866870',
-    projectId: 'isisubuh-c7338',
-    storageBucket: 'isisubuh-c7338.firebasestorage.app',
+    apiKey: 'AIzaSyAECVixFNbkHE1X__V2CWA_vxOXxpVo7HQ',
+    appId: '1:1092823951598:ios:efa7acd1073d138838ebff',
+    messagingSenderId: '1092823951598',
+    projectId: 'zoofeed-1a620',
+    storageBucket: 'zoofeed-1a620.firebasestorage.app',
     iosBundleId: 'com.example.zoofeed',
   );
 
   static const FirebaseOptions windows = FirebaseOptions(
-    apiKey: 'AIzaSyBG1xV4-YiyHcW9ex4kgM8LjaNTGBjbzWg',
-    appId: '1:315538866870:web:785d57237ce7bb48075c17',
-    messagingSenderId: '315538866870',
-    projectId: 'isisubuh-c7338',
-    authDomain: 'isisubuh-c7338.firebaseapp.com',
-    storageBucket: 'isisubuh-c7338.firebasestorage.app',
+    apiKey: 'AIzaSyAdkrsqhQZTmHs7-LaUtOA17I81DFxAXVE',
+    appId: '1:1092823951598:web:50bbd3774925547f38ebff',
+    messagingSenderId: '1092823951598',
+    projectId: 'zoofeed-1a620',
+    authDomain: 'zoofeed-1a620.firebaseapp.com',
+    storageBucket: 'zoofeed-1a620.firebasestorage.app',
   );
 }

@@ -1,30 +1,11 @@
-import 'package:device_preview/device_preview.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'database/firebase_options.dart';
-import 'database/auth_provider.dart' as local_auth;
+import 'database/auth_provider.dart' as local_auth; // Tambahkan alias
 import 'screens/login_screen.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/keeper_dashboard_page.dart';
 import 'models/user_model.dart';
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  
-  runApp(
-    DevicePreview(
-      enabled: !kReleaseMode,
-      builder: (context) => const ZooFeederApp(),
-    ),
-  );
-}
 
 class ZooFeederApp extends StatelessWidget {
   const ZooFeederApp({super.key});
@@ -33,12 +14,9 @@ class ZooFeederApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()),
+        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()), // Gunakan alias
       ],
       child: MaterialApp(
-        locale: DevicePreview.locale(context),
-        builder: DevicePreview.appBuilder,
-        
         title: 'ZooFeeder',
         theme: ThemeData(
           primarySwatch: Colors.green,
@@ -52,10 +30,7 @@ class ZooFeederApp extends StatelessWidget {
               fontWeight: FontWeight.w600,
             ),
           ),
-          useMaterial3: true,
         ),
-        darkTheme: ThemeData.dark(),
-        themeMode: ThemeMode.system,
         debugShowCheckedModeBanner: false,
         home: const AuthWrapper(),
       ),
@@ -68,11 +43,12 @@ class AuthWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<local_auth.AuthProvider>(context);
+    final authProvider = Provider.of<local_auth.AuthProvider>(context); // Gunakan alias
     
     return StreamBuilder<User?>(
       stream: authProvider.authStateChanges,
       builder: (context, snapshot) {
+        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
@@ -81,6 +57,7 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         
+        // Error state
         if (snapshot.hasError) {
           return Scaffold(
             body: Center(
@@ -120,16 +97,20 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         
+        // User is logged in
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
           
+          // Check email verification
           if (!user.emailVerified) {
             return EmailVerificationScreen(user: user, authProvider: authProvider);
           }
           
+          // Get user data and redirect based on role
           return FutureBuilder<UserModel?>(
             future: authProvider.getUserData(user.uid),
             builder: (context, userSnapshot) {
+              // Loading state for user data
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
                   body: Center(
@@ -138,6 +119,7 @@ class AuthWrapper extends StatelessWidget {
                 );
               }
               
+              // Error state for user data
               if (userSnapshot.hasError) {
                 return Scaffold(
                   body: Center(
@@ -175,21 +157,25 @@ class AuthWrapper extends StatelessWidget {
                 );
               }
               
+              // User data loaded successfully
               if (userSnapshot.hasData && userSnapshot.data != null) {
                 final userData = userSnapshot.data!;
                 
+                // Set current user in provider
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (authProvider.currentUser == null) {
                     authProvider.setCurrentUser(userData);
                   }
                 });
                 
+                // Redirect based on role
                 switch (userData.role) {
                   case 'admin':
                     return AdminDashboardPage(user: userData);
                   case 'keeper':
                     return KeeperDashboardPage(user: userData);
                   default:
+                    // Unknown role - show error and logout option
                     return Scaffold(
                       appBar: AppBar(title: const Text('Role Tidak Dikenal')),
                       body: Center(
@@ -213,7 +199,8 @@ class AuthWrapper extends StatelessWidget {
                             const Padding(
                               padding: EdgeInsets.symmetric(horizontal: 40),
                               child: Text(
-                                'Role pengguna tidak dikenali. Silakan hubungi administrator.',
+                                'Role pengguna tidak dikenali. '
+                                'Silakan hubungi administrator.',
                                 textAlign: TextAlign.center,
                                 style: TextStyle(color: Colors.grey),
                               ),
@@ -232,6 +219,7 @@ class AuthWrapper extends StatelessWidget {
                 }
               }
               
+              // No user data found
               return Scaffold(
                 body: Center(
                   child: Column(
@@ -262,15 +250,17 @@ class AuthWrapper extends StatelessWidget {
           );
         }
         
+        // User is not logged in
         return const LoginScreen();
       },
     );
   }
 }
 
+// Email Verification Screen as separate widget
 class EmailVerificationScreen extends StatelessWidget {
   final User user;
-  final local_auth.AuthProvider authProvider;
+  final local_auth.AuthProvider authProvider; // Gunakan alias
 
   const EmailVerificationScreen({
     super.key,
@@ -317,7 +307,8 @@ class EmailVerificationScreen extends StatelessWidget {
               const Padding(
                 padding: EdgeInsets.symmetric(horizontal: 40),
                 child: Text(
-                  'Silakan verifikasi email Anda sebelum login. Cek email Anda untuk link verifikasi.',
+                  'Silakan verifikasi email Anda sebelum login. '
+                  'Cek email Anda untuk link verifikasi.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.grey),
                 ),

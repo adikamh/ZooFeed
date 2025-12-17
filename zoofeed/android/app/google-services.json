@@ -1,32 +1,13 @@
 {
   "project_info": {
-    "project_number": "315538866870",
-    "project_id": "isisubuh-c7338",
-    "storage_bucket": "isisubuh-c7338.firebasestorage.app"
+    "project_number": "1092823951598",
+    "project_id": "zoofeed-1a620",
+    "storage_bucket": "zoofeed-1a620.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:315538866870:android:0ade1eb30fa6e536075c17",
-        "android_client_info": {
-          "package_name": "com.example.weekly_activity_8"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyC03WdOtOlgbD0m8BPO3Nh6DUXPpH7Xn6c"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:315538866870:android:2f01d0af0a83580b075c17",
+        "mobilesdk_app_id": "1:1092823951598:android:925a74dc8d8a60e638ebff",
         "android_client_info": {
           "package_name": "com.example.zoofeed"
         }
@@ -34,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyC03WdOtOlgbD0m8BPO3Nh6DUXPpH7Xn6c"
+          "current_key": "AIzaSyCkq7wp4ZMutFFndg4sIOUETAZyIGm63Pg"
         }
       ],
       "services": {
