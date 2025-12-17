@@ -71,16 +71,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (result['success'] == true) {
+      // Ensure widget still mounted before using context
+      if (!mounted) return;
       // Show success dialog
       await showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
           title: const Text('Pendaftaran Berhasil'),
-          content: const Text(
-            'Silakan verifikasi email Anda sebelum login. '
-            'Link verifikasi telah dikirim ke email Anda.',
-          ),
+          content: const Text('Pendaftaran berhasil! Silakan login menggunakan akun Anda.'),
           actions: [
             TextButton(
               onPressed: () {
