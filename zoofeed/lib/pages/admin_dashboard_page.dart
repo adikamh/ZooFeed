@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import '../../database/auth_provider.dart' as local_auth;
 import '../../models/user_model.dart';
 import '../../models/animal_model.dart';
 import '../../models/notification_model.dart';
 import '../../screens/logout_screen.dart';
+import '../screens/tambah_staff_screen.dart';
+import '../screens/keeper_detail_screen.dart';
+import '../screens/edit_keeper_screen.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final UserModel user;
@@ -140,12 +146,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     ),
   ];
 
-  final List<Map<String, String>> _keepers = [
-    {'id': '1', 'name': 'Budi Santoso', 'email': 'budi@zoo.com', 'status': 'active'},
-    {'id': '2', 'name': 'Sari Wijaya', 'email': 'sari@zoo.com', 'status': 'active'},
-    {'id': '3', 'name': 'Rudi Hartono', 'email': 'rudi@zoo.com', 'status': 'inactive'},
-    {'id': '4', 'name': 'Dewi Lestari', 'email': 'dewi@zoo.com', 'status': 'active'},
-  ];
+  // Keepers will be loaded from Firestore dynamically.
 
   @override
   void initState() {
@@ -171,7 +172,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           user: widget.user,
         ),
         AnimalsManagementTab(animals: _animals),
-        KeepersManagementTab(keepers: _keepers),
+        KeepersManagementTab(
+          keepersStream: FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'keeper')
+              .where('zoo_id', isEqualTo: widget.user.zooId)
+              .snapshots(),
+          currentUserZooId: widget.user.zooId,
+        ),
         NotificationsTab(notifications: _notifications),
         const ReportsTab(),
       ];
@@ -490,7 +498,7 @@ class DashboardHomeTab extends StatelessWidget {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Kelola ${totalAnimals} hewan di kebun binatang Anda',
+                          'Kelola $totalAnimals hewan di kebun binatang Anda',
                           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                                 color: Colors.grey[600],
                               ),
@@ -584,8 +592,7 @@ class DashboardHomeTab extends StatelessWidget {
                               '${animal.name} belum makan ${animal.missedFeedingCount}x berturut-turut',
                               '${animal.species} - ${animal.enclosure}',
                               Icons.pets,
-                            ))
-                        .toList(),
+                            )),
                     // Notifikasi penting
                     ...notifications
                         .where((n) => n.isHighPriority && !n.isRead)
@@ -593,8 +600,7 @@ class DashboardHomeTab extends StatelessWidget {
                               notification.title,
                               notification.message,
                               notification.icon,
-                            ))
-                        .toList(),
+                            )),
                   ],
                 ),
               ),
@@ -657,7 +663,7 @@ class DashboardHomeTab extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withAlpha((0.1 * 255).round()),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -958,9 +964,14 @@ class _AnimalsManagementTabState extends State<AnimalsManagementTab> {
 // KEEPERS MANAGEMENT TAB
 // ==============================
 class KeepersManagementTab extends StatelessWidget {
-  final List<Map<String, String>> keepers;
+  final Stream<QuerySnapshot> keepersStream;
+  final String currentUserZooId;
 
-  const KeepersManagementTab({super.key, required this.keepers});
+  const KeepersManagementTab({
+    super.key,
+    required this.keepersStream,
+    required this.currentUserZooId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -971,7 +982,14 @@ class KeepersManagementTab extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: ElevatedButton.icon(
             onPressed: () {
-              // Navigate to add keeper
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => TambahStaffScreen(
+                    currentUserZooId: currentUserZooId,
+                  ),
+                ),
+              );
             },
             icon: const Icon(Icons.person_add),
             label: const Text('Tambah Keeper Baru'),
@@ -980,10 +998,32 @@ class KeepersManagementTab extends StatelessWidget {
             ),
           ),
         ),
-        // Keepers List
+        // Keepers List (loaded from Firestore)
         Expanded(
-          child: keepers.isEmpty
-              ? const Center(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: keepersStream,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Center(child: Text('Error: ${snapshot.error}'));
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+
+              final docs = snapshot.data?.docs ?? [];
+              final keepers = docs.map((d) {
+                final data = d.data() as Map<String, dynamic>;
+                return <String, String>{
+                  'id': d.id,
+                  'name': (data['full_name'] ?? '').toString(),
+                  'email': (data['email'] ?? '').toString(),
+                  'status': (data['is_active'] == true) ? 'active' : 'inactive',
+                  'phone': (data['phone'] ?? '').toString(),
+                };
+              }).toList();
+
+              if (keepers.isEmpty) {
+                return const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -999,14 +1039,18 @@ class KeepersManagementTab extends StatelessWidget {
                       ),
                     ],
                   ),
-                )
-              : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: keepers.length,
-                  itemBuilder: (context, index) {
-                    return _buildKeeperCard(keepers[index], context);
-                  },
-                ),
+                );
+              }
+
+              return ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: keepers.length,
+                itemBuilder: (context, index) {
+                  return _buildKeeperCard(keepers[index], context);
+                },
+              );
+            },
+          ),
         ),
       ],
     );
@@ -1018,6 +1062,7 @@ class KeepersManagementTab extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         leading: CircleAvatar(
           backgroundColor:
               isActive ? Colors.green[100] : Colors.grey[200],
@@ -1028,9 +1073,15 @@ class KeepersManagementTab extends StatelessWidget {
         ),
         title: Text(
           keeper['name']!,
-          style: const TextStyle(fontWeight: FontWeight.w500),
+          style: const TextStyle(fontWeight: FontWeight.w600),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-        subtitle: Text(keeper['email']!),
+        subtitle: Text(
+          keeper['email']!,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -1049,16 +1100,58 @@ class KeepersManagementTab extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             IconButton(
+              tooltip: 'Edit',
               onPressed: () {
-                // Edit keeper
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => EditKeeperScreen(keeper: keeper)),
+                );
               },
               icon: const Icon(Icons.edit, size: 20),
+            ),
+            const SizedBox(width: 4),
+            IconButton(
+              tooltip: 'Hapus',
+              onPressed: () async {
+                final shouldDelete = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Hapus Keeper'),
+                    content: Text('Yakin ingin menghapus akun "${keeper['name']}"? Ini akan menonaktifkan akunnya.'),
+                    actions: [
+                      TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text('Hapus'),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (shouldDelete != true) return;
+
+                final authProvider = Provider.of<local_auth.AuthProvider>(context, listen: false);
+                final snackBarController = ScaffoldMessenger.of(context);
+
+                snackBarController.showSnackBar(const SnackBar(content: Text('Menghapus akun...')));
+
+                final res = await authProvider.deleteUserAccount(keeper['id']!);
+
+                snackBarController.hideCurrentSnackBar();
+                snackBarController.showSnackBar(SnackBar(content: Text(res['message'] ?? 'Selesai')));
+              },
+              icon: const Icon(Icons.delete_forever, size: 20, color: Colors.red),
             ),
           ],
         ),
         onTap: () {
-          // View keeper details
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => KeeperDetailScreen(keeper: keeper)),
+          );
         },
       ),
     );

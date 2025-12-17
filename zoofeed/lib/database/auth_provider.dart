@@ -27,7 +27,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> loadCurrentUser() async {
     try {
       final user = _auth.currentUser;
-      if (user != null && user.emailVerified) {
+      if (user != null) {
         final userData = await getUserData(user.uid);
         if (userData != null) {
           _currentUser = userData;
@@ -35,7 +35,7 @@ class AuthProvider with ChangeNotifier {
         }
       }
     } catch (e) {
-      print('Error loading current user: $e');
+      debugPrint('Error loading current user: $e');
     }
   }
 
@@ -60,15 +60,7 @@ class AuthProvider with ChangeNotifier {
 
       final user = userCredential.user!;
 
-      // 2. Check email verification
-      if (!user.emailVerified) {
-        await _auth.signOut();
-        _currentUser = null;
-        return {
-          'success': false,
-          'message': 'Email belum diverifikasi. Silakan cek email Anda.'
-        };
-      }
+      // No automatic verification email is sent here
 
       // 3. Get user data from Firestore
       final userData = await getUserData(user.uid);
@@ -76,6 +68,9 @@ class AuthProvider with ChangeNotifier {
       if (userData == null) {
         await _auth.signOut();
         _currentUser = null;
+        _isLoading = false;
+        _error = 'Data pengguna tidak ditemukan.';
+        notifyListeners();
         return {
           'success': false,
           'message': 'Data pengguna tidak ditemukan.'
@@ -89,6 +84,9 @@ class AuthProvider with ChangeNotifier {
       if (!_currentUser!.isActive) {
         await _auth.signOut();
         _currentUser = null;
+        _isLoading = false;
+        _error = 'Akun tidak aktif. Hubungi administrator.';
+        notifyListeners();
         return {
           'success': false,
           'message': 'Akun tidak aktif. Hubungi administrator.'
@@ -169,8 +167,7 @@ class AuthProvider with ChangeNotifier {
 
       final user = userCredential.user!;
 
-      // 2. Send verification email
-      await user.sendEmailVerification();
+
 
       // 3. Create zoo document
       final zooRef = await _firestore.collection('zoos').add({
@@ -223,7 +220,7 @@ class AuthProvider with ChangeNotifier {
 
       return {
         'success': true,
-        'message': 'Pendaftaran berhasil! Silakan verifikasi email Anda.',
+        'message': 'Pendaftaran berhasil!',
         'userId': user.uid,
         'zooId': zooRef.id,
       };
@@ -276,6 +273,36 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  /// Soft-delete a user account by marking `is_active` = false in Firestore.
+  /// Note: Deleting Firebase Authentication user requires admin SDK (server-side).
+  Future<Map<String, dynamic>> deleteUserAccount(String userId) async {
+    try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
+      await _firestore.collection('users').doc(userId).update({
+        'is_active': false,
+        'updated_at': Timestamp.now(),
+      });
+
+      // If we had the current user matching this id, clear it
+      if (_currentUser != null && _currentUser!.uid == userId) {
+        _currentUser = null;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+
+      return {'success': true, 'message': 'Akun berhasil dinonaktifkan.'};
+    } catch (e) {
+      _error = 'Gagal menghapus akun';
+      _isLoading = false;
+      notifyListeners();
+      return {'success': false, 'message': e.toString()};
+    }
+  }
+
   Future<void> forgotPassword(String email) async {
     try {
       _isLoading = true;
@@ -321,7 +348,7 @@ class AuthProvider with ChangeNotifier {
       }
       return null;
     } catch (e) {
-      print('Error getting user data: $e');
+      debugPrint('Error getting user data: $e');
       return null;
     }
   }
@@ -329,20 +356,7 @@ class AuthProvider with ChangeNotifier {
   // ========== TAMBAHKAN METHOD INI ==========
   Future<Map<String, dynamic>> checkEmailVerification() async {
     try {
-      final user = _auth.currentUser;
-      if (user == null) {
-        return {'isVerified': false, 'message': 'Tidak ada pengguna yang login'};
-      }
-
-      await user.reload();
-      final refreshedUser = _auth.currentUser;
-
-      return {
-        'isVerified': refreshedUser?.emailVerified ?? false,
-        'message': refreshedUser?.emailVerified ?? false 
-            ? 'Email sudah diverifikasi' 
-            : 'Email belum diverifikasi',
-      };
+      return {'isVerified': false, 'message': 'Email verification not supported'};
     } catch (e) {
       return {'isVerified': false, 'message': 'Gagal memeriksa verifikasi email'};
     }
@@ -399,12 +413,9 @@ class AuthProvider with ChangeNotifier {
   // ========== TAMBAHKAN METHOD INI ==========
   Future<void> resendVerificationEmail() async {
     try {
-      final user = _auth.currentUser;
-      if (user != null) {
-        await user.sendEmailVerification();
-      }
+      // no-op: verification emails are not used by the app
     } catch (e) {
-      print('Error resending verification email: $e');
+      debugPrint('Error resending verification email: $e');
       rethrow;
     }
   }
@@ -415,7 +426,7 @@ class AuthProvider with ChangeNotifier {
     if (user == null) return false;
     
     await user.reload();
-    return user.emailVerified;
+    return _auth.currentUser != null;
   }
 
   // ========== TAMBAHKAN METHOD INI ==========
