@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
-import 'database/auth_provider.dart' as local_auth; // Tambahkan alias
+import 'database/auth_provider.dart' as local_auth;
 import 'screens/login_screen.dart';
 import 'pages/admin_dashboard_page.dart';
 import 'pages/keeper_dashboard_page.dart';
@@ -14,7 +14,7 @@ class ZooFeederApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()), // Gunakan alias
+        ChangeNotifierProvider(create: (_) => local_auth.AuthProvider()),
       ],
       child: MaterialApp(
         title: 'ZooFeeder',
@@ -48,7 +48,6 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: authProvider.authStateChanges,
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Scaffold(
             body: Center(
@@ -56,8 +55,6 @@ class AuthWrapper extends StatelessWidget {
             ),
           );
         }
-        
-        // Error state
         if (snapshot.hasError) {
           return Scaffold(
             body: Center(
@@ -96,17 +93,11 @@ class AuthWrapper extends StatelessWidget {
             ),
           );
         }
-        
-        // User is logged in
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
-          
-          // No mandatory email verification required — proceed to load user data
-          // Get user data and redirect based on role
           return FutureBuilder<UserModel?>(
             future: authProvider.getUserData(user.uid),
             builder: (context, userSnapshot) {
-              // Loading state for user data
               if (userSnapshot.connectionState == ConnectionState.waiting) {
                 return const Scaffold(
                   body: Center(
@@ -114,8 +105,6 @@ class AuthWrapper extends StatelessWidget {
                   ),
                 );
               }
-              
-              // Error state for user data
               if (userSnapshot.hasError) {
                 return Scaffold(
                   body: Center(
@@ -152,26 +141,19 @@ class AuthWrapper extends StatelessWidget {
                   ),
                 );
               }
-              
-              // User data loaded successfully
               if (userSnapshot.hasData && userSnapshot.data != null) {
                 final userData = userSnapshot.data!;
-                
-                // Set current user in provider
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (authProvider.currentUser == null) {
                     authProvider.setCurrentUser(userData);
                   }
                 });
-                
-                // Redirect based on role
                 switch (userData.role) {
                   case 'admin':
                     return AdminDashboardPage(user: userData);
                   case 'keeper':
                     return KeeperDashboardPage(user: userData);
                   default:
-                    // Unknown role - show error and logout option
                     return Scaffold(
                       appBar: AppBar(title: const Text('Role Tidak Dikenal')),
                       body: Center(
@@ -214,8 +196,6 @@ class AuthWrapper extends StatelessWidget {
                     );
                 }
               }
-              
-              // No user data found
               return Scaffold(
                 body: Center(
                   child: Column(
@@ -245,12 +225,8 @@ class AuthWrapper extends StatelessWidget {
             },
           );
         }
-        
-        // User is not logged in
         return const LoginScreen();
       },
     );
   }
 }
-
-// Email verification UI removed

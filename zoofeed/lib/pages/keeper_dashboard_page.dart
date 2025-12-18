@@ -5,7 +5,6 @@ import '../../models/user_model.dart';
 import '../../models/animal_model.dart';
 import '../../models/notification_model.dart';
 
-// Common padding for list tiles across this page
 const EdgeInsets _kListTilePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
 class KeeperDashboardPage extends StatefulWidget {
@@ -21,7 +20,7 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
   int _selectedIndex = 0;
   int _unreadNotifications = 0;
 
-  // Dummy data untuk staff/keeper
+  
   final List<AnimalModel> _myAnimals = [
     AnimalModel(
       id: '1',
@@ -199,7 +198,6 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
     _unreadNotifications = _notifications.where((n) => !n.isRead).length;
   }
 
-  // Tab untuk staff/keeper
   List<Widget> get _dashboardTabs => [
         StaffHomeTab(
           user: widget.user,
@@ -228,14 +226,14 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
   ];
 
   Future<void> _handleFeedAnimal(AnimalModel animal) async {
-    // Show feeding dialog
+    
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (context) => _FeedingDialog(animal: animal),
     );
 
     if (result != null && result['fed'] == true) {
-      // Update animal status
+      
       setState(() {
         final index = _todaysTasks.indexWhere((a) => a.id == animal.id);
         if (index != -1) {
@@ -293,12 +291,12 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
               IconButton(
                 onPressed: () => setState(() => _selectedIndex = 4),
                 icon: const Icon(Icons.notifications_outlined),
-                padding: const EdgeInsets.all(8), // Tambahkan padding
+                padding: const EdgeInsets.all(8),
               ),
               if (_unreadNotifications > 0)
                 Positioned(
-                  right: 4, // Kurangi dari 8 ke 4
-                  top: 4,   // Kurangi dari 8 ke 4
+                  right: 4,
+                  top: 4,
                   child: Container(
                     padding: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
@@ -306,14 +304,14 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     constraints: const BoxConstraints(
-                      minWidth: 14, // Kurangi dari 16
-                      minHeight: 14, // Kurangi dari 16
+                      minWidth: 14,
+                      minHeight: 14,
                     ),
                     child: Text(
                       '$_unreadNotifications',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 8, // Kurangi dari 10
+                        fontSize: 8,
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -335,7 +333,7 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          // Header
+          
           UserAccountsDrawerHeader(
             accountName: Text(widget.user.fullName),
             accountEmail: Text(widget.user.email),
@@ -353,7 +351,7 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
               color: Colors.blue,
             ),
           ),
-          // Menu Items
+          
           _buildDrawerItem(
             icon: Icons.dashboard,
             title: 'Dashboard',
@@ -388,7 +386,7 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
             title: const Text('Profil Saya'),
             onTap: () {
               Navigator.pop(context);
-              // Navigate to profile
+              
             },
           ),
           ListTile(
@@ -396,7 +394,7 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
             title: const Text('Pengaturan'),
             onTap: () {
               Navigator.pop(context);
-              // Navigate to settings
+              
             },
           ),
           ListTile(
@@ -450,7 +448,6 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
     );
   }
 
-  // Di dalam method _buildBottomNavBar, GANTI SEMUA dengan ini:
 Widget _buildBottomNavBar() {
   return BottomNavigationBar(
     currentIndex: _selectedIndex,
@@ -465,7 +462,7 @@ Widget _buildBottomNavBar() {
       BottomNavigationBarItem(
         icon: Container(
           height: 24,
-          width: 24, // Add width constraint
+          width: 24,
           child: const Icon(Icons.dashboard),
         ),
         label: 'Home',
@@ -473,7 +470,7 @@ Widget _buildBottomNavBar() {
       BottomNavigationBarItem(
         icon: Container(
           height: 24,
-          width: 24, // Add width constraint
+          width: 24,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
@@ -488,7 +485,7 @@ Widget _buildBottomNavBar() {
                     decoration: BoxDecoration(
                       color: Colors.orange,
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: Colors.white, width: 1), // Add border for visibility
+                      border: Border.all(color: Colors.white, width: 1),
                     ),
                   ),
                 ),
@@ -500,7 +497,7 @@ Widget _buildBottomNavBar() {
       BottomNavigationBarItem(
         icon: Container(
           height: 24,
-          width: 24, // Add width constraint
+          width: 24,
           child: const Icon(Icons.pets),
         ),
         label: 'Hewan',
@@ -508,7 +505,7 @@ Widget _buildBottomNavBar() {
       BottomNavigationBarItem(
         icon: Container(
           height: 24,
-          width: 24, // Add width constraint
+          width: 24,
           child: const Icon(Icons.history),
         ),
         label: 'Riwayat',

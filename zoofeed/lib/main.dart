@@ -122,8 +122,7 @@ class AuthWrapper extends StatelessWidget {
         
         if (snapshot.hasData && snapshot.data != null) {
           final user = snapshot.data!;
-          
-          // proceed without requiring email verification
+
           
           return FutureBuilder<UserModel?>(
             future: authProvider.getUserData(user.uid),
@@ -265,5 +264,3 @@ class AuthWrapper extends StatelessWidget {
     );
   }
 }
-
-// Email verification UI removed

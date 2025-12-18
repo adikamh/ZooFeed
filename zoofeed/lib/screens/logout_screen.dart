@@ -8,7 +8,7 @@ class LogoutScreen extends StatelessWidget {
 
   Future<void> _handleLogout(BuildContext context) async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    // The screen already asks for confirmation; proceed directly to logout
+    
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -20,7 +20,7 @@ class LogoutScreen extends StatelessWidget {
     try {
       await authProvider.logout();
 
-      if (context.mounted) Navigator.pop(context); // close loading
+      if (context.mounted) Navigator.pop(context);
 
       if (context.mounted) {
         Navigator.of(context).pushAndRemoveUntil(
