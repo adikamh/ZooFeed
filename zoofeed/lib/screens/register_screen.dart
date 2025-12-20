@@ -33,7 +33,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
-    // Validasi form
     if (_fullNameController.text.isEmpty) {
       _showError('Nama lengkap harus diisi');
       return;
@@ -42,10 +41,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (_emailController.text.isEmpty || !_emailController.text.contains('@')) {
       _showError('Email tidak valid');
       return;
-    }
     
-    if (_passwordController.text.length < 6) {
-      _showError('Password minimal 6 karakter');
+    // ignore: dead_code
+    if (!mounted) return;
       return;
     }
     
@@ -71,9 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (result['success'] == true) {
-      // Ensure widget still mounted before using context
       if (!mounted) return;
-      // Show success dialog
       await showDialog(
         context: context,
         barrierDismissible: false,

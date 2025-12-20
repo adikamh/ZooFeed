@@ -4,7 +4,9 @@ import '../../database/auth_provider.dart' as local_auth;
 import '../../pages/login_page.dart';
 import '../screens/register_screen.dart';
 import '../screens/forgot_password_screen.dart';
-// email verification removed
+import '../pages/admin_dashboard_page.dart';
+import '../pages/keeper_dashboard_page.dart';
+import '../models/user_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -31,11 +33,102 @@ class _LoginScreenState extends State<LoginScreen> {
       _emailController.text.trim(),
       _passwordController.text.trim(),
     );
+    // debug log
+    debugPrint('Login result: $result');
 
-    if (!result['success']) return;
+    if (!result['success']) {
+      final msg = (result['message'] ?? 'Login gagal').toString();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(msg)),
+        );
+      }
+      return;
+    }
+
+    final user = result['user'] as UserModel?;
+    if (user != null) {
+      if (!mounted) return;
+      await _showSuccessPopup(result['message']?.toString() ?? 'Login berhasil');
+
+      switch (user.role) {
+        case 'admin':
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => AdminDashboardPage(user: user)),
+          );
+          break;
+        case 'keeper':
+          if (!mounted) return;
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => KeeperDashboardPage(user: user)),
+          );
+          break;
+        default:
+          break;
+      }
+    }
   }
 
-  // Email verification popup removed
+  Future<void> _showSuccessPopup(String message) async {
+    // show dialog with scale + fade animation, auto dismiss after short delay
+    showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: 'Success',
+      pageBuilder: (context, anim1, anim2) {
+        return const SizedBox.shrink();
+      },
+      transitionBuilder: (context, a1, a2, child) {
+        final curved = Curves.easeOutBack.transform(a1.value);
+        return Opacity(
+          opacity: a1.value,
+          child: Transform.scale(
+            scale: curved,
+            child: Center(
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  width: 220,
+                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.check_circle, size: 80, color: Colors.green[700]),
+                      const SizedBox(height: 12),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 450),
+    );
+
+    // auto-dismiss after short delay
+    await Future.delayed(const Duration(milliseconds: 900));
+    if (mounted) Navigator.of(context, rootNavigator: true).pop();
+  }
+
+  
 
   void _goToRegister() {
     Navigator.push(

@@ -38,14 +38,14 @@ class RegisterPage extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const SizedBox(height: 30),
-              // Back Button
+              
               IconButton(
                 onPressed: () => Navigator.pop(context),
                 icon: const Icon(Icons.arrow_back),
               ),
               const SizedBox(height: 20),
               
-              // Title
+              
               const Text(
                 'Daftar Akun Baru',
                 style: TextStyle(

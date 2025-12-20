@@ -60,7 +60,7 @@ class _TambahStaffPageState extends State<TambahStaffPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
+            
             const SizedBox(height: 10),
             const Text(
               'Tambah Keeper Baru',
@@ -79,7 +79,7 @@ class _TambahStaffPageState extends State<TambahStaffPage> {
             ),
             const SizedBox(height: 30),
 
-            // Error Message
+            
             if (widget.error != null)
               Container(
                 padding: const EdgeInsets.all(12),
@@ -107,7 +107,7 @@ class _TambahStaffPageState extends State<TambahStaffPage> {
               ),
             const SizedBox(height: 20),
 
-            // Form Fields
+            
             _buildTextField(
               controller: widget.fullNameController,
               label: 'Nama Lengkap',
@@ -156,7 +156,7 @@ class _TambahStaffPageState extends State<TambahStaffPage> {
             ),
             const SizedBox(height: 30),
 
-            // Role Selection
+            
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -204,7 +204,7 @@ class _TambahStaffPageState extends State<TambahStaffPage> {
             ),
             const SizedBox(height: 40),
 
-            // Buttons
+            
             Row(
               children: [
                 Expanded(

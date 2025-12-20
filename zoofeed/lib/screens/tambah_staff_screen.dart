@@ -38,7 +38,6 @@ class _TambahStaffScreenState extends State<TambahStaffScreen> {
   }
 
   Future<void> _handleAddStaff() async {
-    // Validasi form
     if (_fullNameController.text.isEmpty) {
       _showError('Nama lengkap harus diisi');
       return;
@@ -65,7 +64,7 @@ class _TambahStaffScreenState extends State<TambahStaffScreen> {
     });
 
     try {
-      // 1. Create user in Firebase Auth
+      
       final auth = FirebaseAuth.instance;
       final userCredential = await auth.createUserWithEmailAndPassword(
         email: _emailController.text.trim(),
@@ -74,9 +73,7 @@ class _TambahStaffScreenState extends State<TambahStaffScreen> {
 
       final user = userCredential.user!;
 
-
-
-      // 3. Create user document in Firestore
+      
       final firestore = FirebaseFirestore.instance;
       
       await firestore.collection('users').doc(user.uid).set({
@@ -97,7 +94,6 @@ class _TambahStaffScreenState extends State<TambahStaffScreen> {
         'created_by': Provider.of<local_auth.AuthProvider>(context, listen: false).currentUser?.uid,
       });
 
-      // 4. Show success dialog
       if (!mounted) return;
       await showDialog(
         context: context,
@@ -124,8 +120,8 @@ class _TambahStaffScreenState extends State<TambahStaffScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close dialog
-                Navigator.pop(context); // Go back to admin dashboard
+                Navigator.pop(context);
+                Navigator.pop(context);
               },
               child: const Text('OK'),
             ),
