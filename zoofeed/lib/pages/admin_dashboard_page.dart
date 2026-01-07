@@ -74,14 +74,26 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     super.dispose();
   }
 
+  void _refreshAnimals() {
+    _animalsSub?.cancel();
+    _animalsSub = FirebaseFirestore.instance
+        .collection('animals')
+        .where('zoo_id', isEqualTo: widget.user.zooId)
+        .snapshots()
+        .listen((snap) {
+      final list = snap.docs.map((d) => AnimalModel.fromFirestore(d)).toList();
+      setState(() => _animals = list);
+    });
+  }
+
   void _navigateToLogoutScreen(BuildContext context) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => const LogoutScreen(),
-    ),
-  );
-}
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LogoutScreen(),
+      ),
+    );
+  }
 
   // Tab yang akan ditampilkan
   List<Widget> get _dashboardTabs => [
@@ -117,18 +129,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       appBar: AppBar(
         title: Text(_tabTitles[_selectedIndex]),
         actions: [
-           IconButton(
-          icon: const Icon(Icons.schedule_outlined),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => JadwalMakanScreen(zooId: widget.user.zooId),
-              ),
-            );
-          },
-          tooltip: 'Lihat Jadwal Makan',
-        ),
+          IconButton(
+            icon: const Icon(Icons.schedule_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => JadwalMakanScreen(zooId: widget.user.zooId),
+                ),
+              );
+            },
+            tooltip: 'Lihat Jadwal Makan',
+          ),
+          if (_selectedIndex == 1)
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshAnimals,
+              tooltip: 'Refresh Hewan',
+            ),
           Stack(
             children: [
               IconButton(
@@ -242,7 +260,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             title: const Text('Logout'),
             onTap: () {
               Navigator.pop(context);
-               _navigateToLogoutScreen(context);
+              _navigateToLogoutScreen(context);
             },
           ),
         ],
@@ -360,7 +378,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-    Widget _buildFloatingActionButton() {
+  Widget _buildFloatingActionButton() {
     if (_selectedIndex == 1) { // Tab Hewan
       return FloatingActionButton(
         onPressed: () {
@@ -369,6 +387,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             MaterialPageRoute(
               builder: (context) => TambahBinatangScreen(
                 zooId: widget.user.zooId,
+                onAnimalAdded: (animal) {
+                  setState(() {
+                    _animals.add(animal);
+                  });
+                },
               ),
             ),
           );
@@ -579,8 +602,7 @@ class DashboardHomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(
-  BuildContext context, {
+  Widget _buildStatCard(BuildContext context, {
   required String title,
   required String value,
   required IconData icon,
