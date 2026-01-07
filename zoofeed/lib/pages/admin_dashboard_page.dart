@@ -33,6 +33,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   // Firestore listeners
   StreamSubscription? _animalsSub;
   StreamSubscription? _notificationsSub;
+  bool _isRefreshingAnimals = false;
 
   // Keepers will be loaded from Firestore dynamically.
 
@@ -74,16 +75,22 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     super.dispose();
   }
 
-  void _refreshAnimals() {
-    _animalsSub?.cancel();
-    _animalsSub = FirebaseFirestore.instance
-        .collection('animals')
-        .where('zoo_id', isEqualTo: widget.user.zooId)
-        .snapshots()
-        .listen((snap) {
-      final list = snap.docs.map((d) => AnimalModel.fromFirestore(d)).toList();
-      setState(() => _animals = list);
-    });
+  Future<void> _refreshAnimals() async {
+    setState(() => _isRefreshingAnimals = true);
+    try {
+      // perform an explicit fetch to ensure most recent data
+      await FirebaseFirestore.instance
+          .collection('animals')
+          .where('zoo_id', isEqualTo: widget.user.zooId)
+          .get();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Data diperbarui')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal memperbarui: $e')));
+    } finally {
+      if (mounted) setState(() => _isRefreshingAnimals = false);
+    }
   }
 
   void _navigateToLogoutScreen(BuildContext context) {

@@ -107,8 +107,9 @@ class _JadwalMakanScreenState extends State<JadwalMakanScreen> {
         title: const Text('Jadwal Makan Harian'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: _isLoading ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.refresh),
             onPressed: _isLoading ? null : _loadAnimals,
+            tooltip: 'Refresh',
           ),
         ],
       ),
