@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'database/firebase_options.dart';
 import 'database/auth_provider.dart' as local_auth;
 import 'screens/login_screen.dart';
@@ -65,6 +66,9 @@ class ZooFeederApp extends StatelessWidget {
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
+
+  // Ensure FCM setup runs only once
+  static bool _fcmSetup = false;
 
   @override
   Widget build(BuildContext context) {
@@ -175,11 +179,68 @@ class AuthWrapper extends StatelessWidget {
               if (userSnapshot.hasData && userSnapshot.data != null) {
                 final userData = userSnapshot.data!;
                 
-                WidgetsBinding.instance.addPostFrameCallback((_) {
+                WidgetsBinding.instance.addPostFrameCallback((_) async {
                   if (authProvider.currentUser == null) {
                     authProvider.setCurrentUser(userData);
                   }
+
+                  // Initialize FCM once and register this device token for the logged-in user
+                  if (!AuthWrapper._fcmSetup) {
+                    AuthWrapper._fcmSetup = true;
+
+                    try {
+                      await FirebaseMessaging.instance.requestPermission(
+                        alert: true,
+                        badge: true,
+                        sound: true,
+                      );
+                    } catch (_) {}
+
+                    try {
+                      final token = await FirebaseMessaging.instance.getToken();
+                      if (token != null) {
+                        await authProvider.registerFcmToken(token);
+                      }
+                    } catch (e) {
+                      debugPrint('Failed to get FCM token: $e');
+                    }
+
+                    // Listen for token refreshes
+                    FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
+                      try {
+                        await authProvider.registerFcmToken(newToken);
+                      } catch (e) {
+                        debugPrint('Failed to register refreshed token: $e');
+                      }
+                    });
+
+                    // Foreground message handler - show a SnackBar with title + body
+                    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+                      final n = message.notification;
+                      final t = n?.title ?? '';
+                      final b = n?.body ?? '';
+                      if (t.isEmpty && b.isEmpty) {
+                        debugPrint('FCM foreground message (no notification payload)');
+                        return;
+                      }
+
+                      try {
+                        final messenger = ScaffoldMessenger.maybeOf(context);
+                        if (messenger != null) {
+                          messenger.showSnackBar(SnackBar(
+                            content: Text(t.isNotEmpty ? '$t\n$b' : b),
+                            duration: const Duration(seconds: 4),
+                          ));
+                        } else {
+                          debugPrint('FCM message but no ScaffoldMessenger available');
+                        }
+                      } catch (e) {
+                        debugPrint('Error showing FCM SnackBar: $e');
+                      }
+                    });
+                  }
                 });
+                
                 
                 switch (userData.role) {
                   case 'admin':

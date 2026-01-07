@@ -7,6 +7,9 @@ import '../../models/user_model.dart';
 import '../../models/animal_model.dart';
 import '../../models/notification_model.dart';
 import '../screens/animal_detail_screen.dart';
+import '../screens/login_screen.dart';
+import '../screens/keeper_quick_report_screen.dart';
+import '../screens/keeper_reports_history_screen.dart';
 
 const EdgeInsets _kListTilePadding = EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
@@ -251,7 +254,21 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
     if (shouldLogout == true) {
       if (!mounted) return;
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.logout();
+      try {
+        await authProvider.logout();
+
+        if (!mounted) return;
+        // Ensure we return to the login screen and clear navigation stack
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal logout: $e')),
+        );
+      }
     }
   }
 
@@ -867,7 +884,12 @@ class StaffHomeTab extends StatelessWidget {
                         label: 'Riwayat',
                         color: Colors.orange,
                         onTap: () {
-                          // View history
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => KeeperReportsHistoryScreen(currentUser: user),
+                            ),
+                          );
                         },
                       ),
                       _buildQuickActionButton(
@@ -875,7 +897,12 @@ class StaffHomeTab extends StatelessWidget {
                         label: 'Lapor',
                         color: Colors.red,
                         onTap: () {
-                          // Report issue
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => KeeperQuickReportScreen(currentUser: user),
+                            ),
+                          );
                         },
                       ),
                     ],

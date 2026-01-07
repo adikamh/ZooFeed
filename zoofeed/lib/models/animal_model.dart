@@ -46,20 +46,72 @@ class AnimalModel {
       species: data['species'] ?? '',
       enclosure: data['enclosure'] ?? '',
       feedingSchedule: data['feeding_schedule'] ?? '2x sehari',
-      lastFedDate: data['last_fed_date'] != null 
-          ? DateTime.parse(data['last_fed_date'])
-          : null,
-      lastFedTime: data['last_fed_time'] != null 
-          ? DateTime.parse('1970-01-01 ${data['last_fed_time']}')
-          : null,
+        lastFedDate: _parseNullableDate(data['last_fed_date']),
+        lastFedTime: _parseNullableTime(data['last_fed_time']),
       fedByUserId: data['fed_by_user_id'],
       feedingStatus: data['feeding_status'] ?? 'hungry',
       missedFeedingCount: data['missed_feeding_count'] ?? 0,
       notes: data['notes'],
       isActive: data['is_active'] ?? true,
-      createdAt: (data['created_at'] as Timestamp).toDate(),
-      updatedAt: (data['updated_at'] as Timestamp).toDate(),
+      createdAt: _parseTimestampToDate(data['created_at']) ?? DateTime.now(),
+      updatedAt: _parseTimestampToDate(data['updated_at']) ?? DateTime.now(),
     );
+  }
+
+  static DateTime? _parseNullableDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static DateTime? _parseNullableTime(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) {
+      // Expecting format 'HH:mm' or full datetime
+      final parts = value.split(' ');
+      String timePart = value;
+      if (parts.length > 1) timePart = parts.last;
+      final t = timePart.split(':');
+      if (t.length >= 2) {
+        try {
+          final h = int.parse(t[0]);
+          final m = int.parse(t[1]);
+          return DateTime(1970, 1, 1, h, m);
+        } catch (_) {
+          return null;
+        }
+      }
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  static DateTime? _parseTimestampToDate(dynamic value) {
+    if (value == null) return null;
+    if (value is Timestamp) return value.toDate();
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   Map<String, dynamic> toMap() {
