@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "1092823951598",
-    "project_id": "zoofeed-1a620",
-    "storage_bucket": "zoofeed-1a620.firebasestorage.app"
+    "project_number": "1076455662458",
+    "project_id": "zoofeed-a4e73",
+    "storage_bucket": "zoofeed-a4e73.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:1092823951598:android:925a74dc8d8a60e638ebff",
+        "mobilesdk_app_id": "1:1076455662458:android:de08b6ab386d5aced2ecc3",
         "android_client_info": {
           "package_name": "com.example.zoofeed"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCkq7wp4ZMutFFndg4sIOUETAZyIGm63Pg"
+          "current_key": "AIzaSyDSlN1uOFC34nYMPLQHPWtg9MZWpID1Rsc"
         }
       ],
       "services": {

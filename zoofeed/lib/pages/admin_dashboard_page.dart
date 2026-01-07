@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
@@ -9,6 +10,9 @@ import '../../screens/logout_screen.dart';
 import '../screens/tambah_staff_screen.dart';
 import '../screens/keeper_detail_screen.dart';
 import '../screens/edit_keeper_screen.dart';
+import '../screens/tambah_binatang_screen.dart';
+import '../screens/jadwal_makan_screen.dart';
+import '../screens/animal_detail_screen.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final UserModel user;
@@ -22,129 +26,12 @@ class AdminDashboardPage extends StatefulWidget {
 class _AdminDashboardPageState extends State<AdminDashboardPage> {
   int _selectedIndex = 0;
   int _unreadNotifications = 0;
-
-  // Dummy data - nanti akan diganti dengan data dari Firestore
-  final List<AnimalModel> _animals = [
-    AnimalModel(
-      id: '1',
-      zooId: 'zoo1',
-      name: 'Simba',
-      species: 'Singa',
-      enclosure: 'Kandang A',
-      feedingSchedule: '2x sehari',
-      lastFedDate: DateTime.now().subtract(const Duration(hours: 2)),
-      lastFedTime: DateTime.now().subtract(const Duration(hours: 2)),
-      fedByUserId: 'user1',
-      feedingStatus: 'fed',
-      missedFeedingCount: 0,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 30)),
-      updatedAt: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    AnimalModel(
-      id: '2',
-      zooId: 'zoo1',
-      name: 'Dumbo',
-      species: 'Gajah',
-      enclosure: 'Kandang B',
-      feedingSchedule: '3x sehari',
-      lastFedDate: DateTime.now().subtract(const Duration(days: 1)),
-      lastFedTime: DateTime.now().subtract(const Duration(days: 1)),
-      fedByUserId: null,
-      feedingStatus: 'hungry',
-      missedFeedingCount: 1,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 25)),
-      updatedAt: DateTime.now(),
-    ),
-    AnimalModel(
-      id: '3',
-      zooId: 'zoo1',
-      name: 'Koko',
-      species: 'Orangutan',
-      enclosure: 'Kandang C',
-      feedingSchedule: '2x sehari',
-      lastFedDate: DateTime.now().subtract(const Duration(hours: 3)),
-      lastFedTime: DateTime.now().subtract(const Duration(hours: 3)),
-      fedByUserId: 'user2',
-      feedingStatus: 'fed',
-      missedFeedingCount: 0,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 20)),
-      updatedAt: DateTime.now().subtract(const Duration(hours: 3)),
-    ),
-    AnimalModel(
-      id: '4',
-      zooId: 'zoo1',
-      name: 'Raja',
-      species: 'Harimau',
-      enclosure: 'Kandang D',
-      feedingSchedule: '2x sehari',
-      lastFedDate: DateTime.now().subtract(const Duration(days: 2)),
-      lastFedTime: DateTime.now().subtract(const Duration(days: 2)),
-      fedByUserId: null,
-      feedingStatus: 'hungry',
-      missedFeedingCount: 2,
-      isActive: true,
-      createdAt: DateTime.now().subtract(const Duration(days: 15)),
-      updatedAt: DateTime.now(),
-    ),
-  ];
-
-  final List<NotificationModel> _notifications = [
-    NotificationModel(
-      id: '1',
-      zooId: 'zoo1',
-      userId: 'user1',
-      type: 'feeding_reminder',
-      title: 'Waktunya memberi makan',
-      message: 'Ada 5 hewan yang belum makan',
-      priority: 'medium',
-      deliveryMethod: 'push',
-      isRead: false,
-      isSent: true,
-      scheduledTime: DateTime.now().subtract(const Duration(hours: 1)),
-      sentTime: DateTime.now().subtract(const Duration(hours: 1)),
-      metadata: {'animal_count': 5},
-      createdAt: DateTime.now().subtract(const Duration(hours: 1)),
-      updatedAt: DateTime.now().subtract(const Duration(hours: 1)),
-    ),
-    NotificationModel(
-      id: '2',
-      zooId: 'zoo1',
-      userId: 'user1',
-      type: 'missed_feeding',
-      title: 'Hewan terlewat makan',
-      message: 'Simba belum makan sejak kemarin',
-      animalId: '1',
-      priority: 'high',
-      deliveryMethod: 'push',
-      isRead: false,
-      isSent: true,
-      scheduledTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      sentTime: DateTime.now().subtract(const Duration(minutes: 30)),
-      metadata: {'hours_since_last_feed': 26},
-      createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-      updatedAt: DateTime.now().subtract(const Duration(minutes: 30)),
-    ),
-    NotificationModel(
-      id: '3',
-      zooId: 'zoo1',
-      userId: 'user1',
-      type: 'daily_summary',
-      title: 'Laporan harian',
-      message: '40/45 hewan sudah makan hari ini',
-      priority: 'low',
-      deliveryMethod: 'push',
-      isRead: true,
-      isSent: true,
-      scheduledTime: DateTime.now().subtract(const Duration(hours: 3)),
-      sentTime: DateTime.now().subtract(const Duration(hours: 3)),
-      metadata: {'fed_count': 40, 'total_count': 45, 'percentage': 89},
-      createdAt: DateTime.now().subtract(const Duration(hours: 3)),
-      updatedAt: DateTime.now().subtract(const Duration(hours: 3)),
-    ),
-  ];
+  // Data akan diload dari Firestore
+  List<AnimalModel> _animals = [];
+  List<NotificationModel> _notifications = [];
+  // Firestore listeners
+  StreamSubscription? _animalsSub;
+  StreamSubscription? _notificationsSub;
 
   // Keepers will be loaded from Firestore dynamically.
 
@@ -153,6 +40,37 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     super.initState();
     // Hitung notifikasi belum dibaca
     _unreadNotifications = _notifications.where((n) => !n.isRead).length;
+
+    // Listen animals for current zoo
+    _animalsSub = FirebaseFirestore.instance
+        .collection('animals')
+        .where('zoo_id', isEqualTo: widget.user.zooId)
+        .snapshots()
+        .listen((snap) {
+      final list = snap.docs.map((d) => AnimalModel.fromFirestore(d)).toList();
+      setState(() => _animals = list);
+    });
+
+    // Listen notifications for current zoo
+    _notificationsSub = FirebaseFirestore.instance
+        .collection('notifications')
+        .where('zoo_id', isEqualTo: widget.user.zooId)
+        .orderBy('created_at', descending: true)
+        .snapshots()
+        .listen((snap) {
+      final list = snap.docs.map((d) => NotificationModel.fromFirestore(d)).toList();
+      setState(() {
+        _notifications = list;
+        _unreadNotifications = _notifications.where((n) => !n.isRead).length;
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _animalsSub?.cancel();
+    _notificationsSub?.cancel();
+    super.dispose();
   }
 
   void _navigateToLogoutScreen(BuildContext context) {
@@ -171,7 +89,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           notifications: _notifications,
           user: widget.user,
         ),
-        AnimalsManagementTab(animals: _animals),
+        AnimalsManagementTab(animals: _animals, currentUser: widget.user),
         KeepersManagementTab(
           keepersStream: FirebaseFirestore.instance
               .collection('users')
@@ -198,7 +116,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       appBar: AppBar(
         title: Text(_tabTitles[_selectedIndex]),
         actions: [
-          // Notification Badge
+           IconButton(
+          icon: const Icon(Icons.schedule_outlined),
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => JadwalMakanScreen(zooId: widget.user.zooId),
+              ),
+            );
+          },
+          tooltip: 'Lihat Jadwal Makan',
+        ),
           Stack(
             children: [
               IconButton(
@@ -430,14 +359,24 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  Widget _buildFloatingActionButton() {
-    return FloatingActionButton(
-      onPressed: () {
-        // Add new animal
-      },
-      backgroundColor: Colors.green,
-      child: const Icon(Icons.add, color: Colors.white),
-    );
+    Widget _buildFloatingActionButton() {
+    if (_selectedIndex == 1) { // Tab Hewan
+      return FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => TambahBinatangScreen(
+                zooId: widget.user.zooId,
+              ),
+            ),
+          );
+        },
+        backgroundColor: Colors.green,
+        child: const Icon(Icons.add, color: Colors.white),
+      );
+    }
+    return const SizedBox.shrink();
   }
 }
 
@@ -746,8 +685,9 @@ class DashboardHomeTab extends StatelessWidget {
 // ==============================
 class AnimalsManagementTab extends StatefulWidget {
   final List<AnimalModel> animals;
+  final UserModel currentUser;
 
-  const AnimalsManagementTab({super.key, required this.animals});
+  const AnimalsManagementTab({super.key, required this.animals, required this.currentUser});
 
   @override
   State<AnimalsManagementTab> createState() => _AnimalsManagementTabState();
@@ -948,12 +888,82 @@ class _AnimalsManagementTabState extends State<AnimalsManagementTab> {
               ),
             ),
           ],
-          onSelected: (value) {
-            // Handle menu selection
+          onSelected: (value) async {
+            if (value == 'edit') {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Fitur edit belum diimplementasikan')));
+              return;
+            }
+
+            if (value == 'feed') {
+              final now = DateTime.now();
+              try {
+                await FirebaseFirestore.instance.collection('animals').doc(animal.id).update({
+                  'last_fed_date': Timestamp.fromDate(now),
+                  'last_fed_time': '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}',
+                  'fed_by_user_id': widget.currentUser.uid,
+                  'feeding_status': 'fed',
+                  'missed_feeding_count': 0,
+                  'updated_at': Timestamp.fromDate(now),
+                });
+
+                await FirebaseFirestore.instance.collection('notifications').add({
+                  'zoo_id': animal.zooId,
+                  'user_id': widget.currentUser.uid,
+                  'type': 'feeding_event',
+                  'title': 'Hewan diberi makan',
+                  'message': '${animal.name} diberi makan oleh ${widget.currentUser.fullName}',
+                  'animal_id': animal.id,
+                  'priority': 'medium',
+                  'delivery_method': 'push',
+                  'is_read': false,
+                  'is_sent': false,
+                  'metadata': {'fed_by': widget.currentUser.uid},
+                  'created_at': Timestamp.fromDate(now),
+                  'updated_at': Timestamp.fromDate(now),
+                });
+
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('${animal.name} ditandai sudah makan'), backgroundColor: Colors.green));
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menandai makan: $e')));
+              }
+              return;
+            }
+
+            if (value == 'delete') {
+              final shouldDelete = await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Hapus Binatang'),
+                  content: Text('Yakin ingin menghapus "${animal.name}"?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+                    ElevatedButton(style: ElevatedButton.styleFrom(backgroundColor: Colors.red), onPressed: () => Navigator.pop(context, true), child: const Text('Hapus')),
+                  ],
+                ),
+              );
+
+              if (shouldDelete != true) return;
+
+              try {
+                await FirebaseFirestore.instance.collection('animals').doc(animal.id).delete();
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Binatang dihapus'), backgroundColor: Colors.green));
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menghapus: $e')));
+              }
+            }
           },
         ),
         onTap: () {
-          // Navigate to animal detail
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AnimalDetailScreen(animal: animal, currentUser: widget.currentUser),
+            ),
+          );
         },
       ),
     );
@@ -1212,8 +1222,22 @@ class _NotificationsTabState extends State<NotificationsTab> {
               const SizedBox(width: 8),
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () {
+                  onPressed: () async {
                     // Mark all as read
+                    final unread = widget.notifications.where((n) => !n.isRead).toList();
+                    if (unread.isEmpty) return;
+                    final batch = FirebaseFirestore.instance.batch();
+                    final now = DateTime.now();
+                    for (final n in unread) {
+                      final ref = FirebaseFirestore.instance.collection('notifications').doc(n.id);
+                      batch.update(ref, {'is_read': true, 'updated_at': Timestamp.fromDate(now)});
+                    }
+                    try {
+                      await batch.commit();
+                    } catch (e) {
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menandai semua: $e')));
+                    }
                   },
                   icon: const Icon(Icons.done_all),
                   label: Text('Tandai Semua ($unreadCount)'),
@@ -1318,8 +1342,43 @@ class _NotificationsTabState extends State<NotificationsTab> {
               ),
           ],
         ),
-        onTap: () {
-          // Mark as read and show details
+        onTap: () async {
+          // Mark as read then show details
+          if (!notification.isRead) {
+            try {
+              await FirebaseFirestore.instance.collection('notifications').doc(notification.id).update({
+                'is_read': true,
+                'updated_at': Timestamp.fromDate(DateTime.now()),
+              });
+            } catch (e) {
+              if (!mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Gagal menandai notifikasi: $e')));
+            }
+          }
+
+          if (!mounted) return;
+          showDialog<void>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text(notification.title),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(notification.message),
+                  const SizedBox(height: 8),
+                  if (notification.metadata.isNotEmpty) ...[
+                    const Text('Detail:', style: TextStyle(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(notification.metadata.toString()),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Tutup')),
+              ],
+            ),
+          );
         },
       ),
     );
