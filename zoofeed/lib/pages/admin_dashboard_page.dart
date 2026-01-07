@@ -13,6 +13,7 @@ import '../screens/edit_keeper_screen.dart';
 import '../screens/tambah_binatang_screen.dart';
 import '../screens/jadwal_makan_screen.dart';
 import '../screens/animal_detail_screen.dart';
+import '../screens/admin_reports_screen.dart';
 
 class AdminDashboardPage extends StatefulWidget {
   final UserModel user;
@@ -99,7 +100,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           currentUserZooId: widget.user.zooId,
         ),
         NotificationsTab(notifications: _notifications),
-        const ReportsTab(),
+        ReportsTab(currentUser: widget.user),
       ];
 
   final List<String> _tabTitles = [
@@ -1389,7 +1390,9 @@ class _NotificationsTabState extends State<NotificationsTab> {
 // REPORTS TAB
 // ==============================
 class ReportsTab extends StatelessWidget {
-  const ReportsTab({super.key});
+  final UserModel currentUser;
+
+  const ReportsTab({super.key, required this.currentUser});
 
   @override
   Widget build(BuildContext context) {
@@ -1433,11 +1436,21 @@ class ReportsTab extends StatelessWidget {
                 'Performa bulan ini',
                 Colors.purple,
               ),
-              _buildReportCard(
-                'Laporan Keeper',
-                Icons.people,
-                'Aktivitas keeper',
-                Colors.orange,
+              InkWell(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AdminReportsScreen(currentUser: currentUser),
+                    ),
+                  );
+                },
+                child: _buildReportCard(
+                  'Laporan Keeper',
+                  Icons.people,
+                  'Aktivitas keeper',
+                  Colors.orange,
+                ),
               ),
             ],
           ),

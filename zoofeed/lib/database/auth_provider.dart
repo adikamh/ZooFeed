@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import '../models/user_model.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -267,10 +268,49 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> logout() async {
+    try {
+      // Remove current device FCM token from user document to avoid sending notifications after logout
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token != null && _currentUser != null) {
+        try {
+          await _firestore.collection('users').doc(_currentUser!.uid).update({
+            'fcm_tokens': FieldValue.arrayRemove([token]),
+            'updated_at': Timestamp.now(),
+          });
+        } catch (_) {}
+      }
+    } catch (_) {}
+
     await _auth.signOut();
     _currentUser = null;
     _error = null;
     notifyListeners();
+  }
+
+  /// Register a device FCM token for the current user
+  Future<void> registerFcmToken(String token) async {
+    if (_currentUser == null) return;
+    try {
+      await _firestore.collection('users').doc(_currentUser!.uid).update({
+        'fcm_tokens': FieldValue.arrayUnion([token]),
+        'updated_at': Timestamp.now(),
+      });
+    } catch (e) {
+      debugPrint('Failed to register FCM token: $e');
+    }
+  }
+
+  /// Remove a device FCM token for the current user
+  Future<void> removeFcmToken(String token) async {
+    if (_currentUser == null) return;
+    try {
+      await _firestore.collection('users').doc(_currentUser!.uid).update({
+        'fcm_tokens': FieldValue.arrayRemove([token]),
+        'updated_at': Timestamp.now(),
+      });
+    } catch (e) {
+      debugPrint('Failed to remove FCM token: $e');
+    }
   }
 
   /// Soft-delete a user account by marking `is_active` = false in Firestore.

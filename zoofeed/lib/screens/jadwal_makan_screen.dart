@@ -123,7 +123,10 @@ class _JadwalMakanScreenState extends State<JadwalMakanScreen> {
       itemCount: _jadwalHarian.length,
       itemBuilder: (context, index) {
         final jadwal = _jadwalHarian[index];
-        final binatang = jadwal['binatang'] as List<AnimalModel>;
+        // Ensure we have a proper Dart List<AnimalModel>
+        final rawList = jadwal['binatang'] ?? [];
+        final binatang = List<AnimalModel>.from(
+          (rawList is List ? rawList : []).whereType<AnimalModel>());
         final color = jadwal['color'] as Color?;
 
         return Card(
