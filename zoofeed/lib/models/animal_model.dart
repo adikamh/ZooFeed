@@ -81,6 +81,32 @@ class AnimalModel {
     };
   }
 
+  // Di dalam class AnimalModel
+List<String> get feedingTimes {
+  if (feedingSchedule.contains(',')) {
+    return feedingSchedule.split(',').map((time) => time.trim()).toList();
+  } else if (feedingSchedule.contains('1x')) {
+    return ['12:00']; // Default untuk 1x sehari
+  } else if (feedingSchedule.contains('2x')) {
+    return ['08:00', '16:00']; // Default untuk 2x sehari
+  } else if (feedingSchedule.contains('3x')) {
+    return ['08:00', '12:00', '16:00']; // Default untuk 3x sehari
+  } else {
+    return [feedingSchedule]; // Return as-is
+  }
+}
+
+String get feedingScheduleDisplay {
+  if (feedingSchedule.contains(',')) {
+    final times = feedingTimes;
+    if (times.length == 1) return '1x sehari (${times[0]})';
+    if (times.length == 2) return '2x sehari (${times[0]}, ${times[1]})';
+    if (times.length == 3) return '3x sehari (${times[0]}, ${times[1]}, ${times[2]})';
+    return '${times.length}x sehari';
+  }
+  return feedingSchedule;
+}
+
   // Helper methods
   bool get isFed => feedingStatus == 'fed';
   bool get isHungry => feedingStatus == 'hungry';
@@ -206,20 +232,22 @@ class AnimalModel {
   // Check if animal should be fed based on schedule
   bool get shouldBeFedNow {
     if (!isActive || isFed) return false;
-    
+
     final now = DateTime.now();
-    final hour = now.hour;
-    
-    // Default feeding times based on schedule
-    switch (feedingSchedule) {
-      case '1x':
-        return hour == 12; // Siang hari
-      case '2x':
-        return hour == 8 || hour == 16; // Pagi & Sore
-      case '3x':
-        return hour == 8 || hour == 12 || hour == 16; // Pagi, Siang, Sore
-      default:
-        return false;
+
+    // Use feedingTimes to determine scheduled hours (supports custom times)
+    for (final t in feedingTimes) {
+      final parts = t.split(':');
+      if (parts.length >= 1) {
+        try {
+          final h = int.parse(parts[0]);
+          if (now.hour == h) return true;
+        } catch (_) {
+          // ignore parse errors
+        }
+      }
     }
+
+    return false;
   }
 }
