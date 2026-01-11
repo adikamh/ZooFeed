@@ -67,7 +67,10 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
 
       setState(() {
         _myAnimals = my.isNotEmpty ? my : all; // fallback to all if no assignment
-        _todaysTasks = _myAnimals.where((a) => a.shouldBeFedNow && a.isHungry).toList();
+        // Show animals that currently need feeding (hungry), not only those
+        // that match the exact scheduled hour. This ensures the "Tugas"
+        // screen lists animals like in the first pasted image.
+        _todaysTasks = _myAnimals.where((a) => a.isHungry).toList();
       });
     });
 
@@ -122,6 +125,7 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
           myAnimals: _myAnimals,
           todaysTasks: _todaysTasks,
           notifications: _notifications,
+          onQuickFeed: (animal) => _handleFeedAnimal(animal),
         ),
         FeedingTasksTab(
           todaysTasks: _todaysTasks,
@@ -154,10 +158,10 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
 
     if (result != null && result['fed'] == true) {
       setState(() {
-        final index = _todaysTasks.indexWhere((a) => a.id == animal.id);
-        if (index != -1) {
-          _todaysTasks[index] = animal.markAsFed(widget.user.uid);
-        }
+        // Remove the animal from today's task list immediately so the UI
+        // reflects that the task is done (the list will also be updated
+        // by Firestore listeners once the DB write completes).
+        _todaysTasks.removeWhere((a) => a.id == animal.id);
       });
 
       // Simpan perubahan ke Firestore
@@ -298,8 +302,12 @@ class _KeeperDashboardPageState extends State<KeeperDashboardPage> {
       ),
       drawer: _buildDrawer(context),
       body: _dashboardTabs[_selectedIndex],
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButton: _selectedIndex == 1 ? _buildQuickFeedButton() : null,
+        bottomNavigationBar: _buildBottomNavBar(),
+        floatingActionButton: _selectedIndex == 1
+          ? _buildQuickFeedButton()
+          : _selectedIndex == 2
+            ? _buildAddScheduleButton()
+            : null,
     );
   }
 
@@ -527,6 +535,180 @@ Widget _buildBottomNavBar() {
       child: const Icon(Icons.restaurant, color: Colors.white),
     );
   }
+
+  Widget _buildAddScheduleButton() {
+    return FloatingActionButton(
+      onPressed: () => _handleAddSchedule(),
+      backgroundColor: Colors.teal,
+      child: const Icon(Icons.schedule, color: Colors.white),
+      tooltip: 'Tambah Jadwal Makan',
+    );
+  }
+  Future<void> _handleAddSchedule() async {
+    if (_myAnimals.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Belum ada hewan untuk ditambahkan jadwal')),
+      );
+      return;
+    }
+
+    String selectedAnimalId = _myAnimals.first.id;
+    final presetTimes = <String>[
+      '06:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00'
+    ];
+    final selectedTimes = <String>{};
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setState) {
+          void toggleTime(String t) {
+            setState(() {
+              if (selectedTimes.contains(t)) selectedTimes.remove(t);
+              else selectedTimes.add(t);
+            });
+          }
+
+          Future<void> pickCustomTime() async {
+            final tod = await showTimePicker(context: context, initialTime: TimeOfDay(hour: 12, minute: 0));
+            if (tod != null) {
+              final hh = tod.hour.toString().padLeft(2, '0');
+              final mm = tod.minute.toString().padLeft(2, '0');
+              setState(() => selectedTimes.add('$hh:$mm'));
+            }
+          }
+
+          return AlertDialog(
+            title: const Text('Tambah Jadwal Pemberian Makan'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selectedAnimalId,
+                    items: _myAnimals.map((a) => DropdownMenuItem(value: a.id, child: Text(a.name))).toList(),
+                    onChanged: (v) => setState(() => selectedAnimalId = v ?? selectedAnimalId),
+                    decoration: const InputDecoration(labelText: 'Pilih Hewan'),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text('Pilih waktu (boleh lebih dari satu):'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: presetTimes.map((t) {
+                      final on = selectedTimes.contains(t);
+                      return ChoiceChip(
+                        label: Text(t),
+                        selected: on,
+                        onSelected: (_) => toggleTime(t),
+                      );
+                    }).toList()
+                      ..add(ChoiceChip(
+                        label: const Text('+ Tambah waktu'),
+                        selected: false,
+                        onSelected: (_) => pickCustomTime(),
+                      )),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          // preset 1x: select noon
+                          setState(() {
+                            selectedTimes.clear();
+                            selectedTimes.add('12:00');
+                          });
+                        },
+                        child: const Text('1x'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedTimes.clear();
+                            selectedTimes.addAll(['08:00', '16:00']);
+                          });
+                        },
+                        child: const Text('2x'),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () {
+                          setState(() {
+                            selectedTimes.clear();
+                            selectedTimes.addAll(['08:00', '12:00', '16:00']);
+                          });
+                        },
+                        child: const Text('3x'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Batal')),
+              ElevatedButton(
+                onPressed: selectedTimes.isEmpty ? null : () => Navigator.pop(context, true),
+                child: const Text('Simpan'),
+              ),
+            ],
+          );
+        });
+      },
+    );
+
+    if (result == true) {
+      final animal = _myAnimals.firstWhere((a) => a.id == selectedAnimalId, orElse: () => _myAnimals.first);
+      final timesList = selectedTimes.toList()..sort();
+      final scheduleString = timesList.join(', ');
+
+      try {
+        final now = DateTime.now();
+        await FirebaseFirestore.instance.collection('animals').doc(animal.id).update({
+          'feeding_schedule': scheduleString,
+          'updated_at': Timestamp.fromDate(now),
+        });
+
+        setState(() {
+          final idx = _myAnimals.indexWhere((a) => a.id == animal.id);
+          if (idx != -1) {
+            _myAnimals[idx] = AnimalModel(
+              id: animal.id,
+              zooId: animal.zooId,
+              name: animal.name,
+              species: animal.species,
+              enclosure: animal.enclosure,
+              feedingSchedule: scheduleString,
+              lastFedDate: animal.lastFedDate,
+              lastFedTime: animal.lastFedTime,
+              fedByUserId: animal.fedByUserId,
+              feedingStatus: animal.feedingStatus,
+              missedFeedingCount: animal.missedFeedingCount,
+              notes: animal.notes,
+              isActive: animal.isActive,
+              createdAt: animal.createdAt,
+              updatedAt: DateTime.now(),
+            );
+          }
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Jadwal disimpan untuk ${animal.name}: $scheduleString')),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal menyimpan jadwal: $e')),
+        );
+      }
+    }
+  }
 }
 
 // ==============================
@@ -642,6 +824,7 @@ class StaffHomeTab extends StatelessWidget {
   final List<AnimalModel> myAnimals;
   final List<AnimalModel> todaysTasks;
   final List<NotificationModel> notifications;
+  final void Function(AnimalModel) onQuickFeed;
 
   const StaffHomeTab({
     super.key,
@@ -649,6 +832,7 @@ class StaffHomeTab extends StatelessWidget {
     required this.myAnimals,
     required this.todaysTasks,
     required this.notifications,
+    required this.onQuickFeed,
   });
 
   @override
@@ -851,7 +1035,15 @@ class StaffHomeTab extends StatelessWidget {
                         label: 'Beri Makan',
                         color: Colors.green,
                         onTap: () {
-                          // Navigate to feeding tasks
+                          if (todaysTasks.isNotEmpty) {
+                            onQuickFeed(todaysTasks.first);
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Tidak ada tugas pemberian makan saat ini'),
+                              ),
+                            );
+                          }
                         },
                       ),
                       _buildQuickActionButton(
@@ -1235,7 +1427,7 @@ class MyAnimalsTab extends StatelessWidget {
                     ],
                   ),
                 )
-              : ListView.builder(
+              : ListView.builder( 
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: myAnimals.length,
                   itemBuilder: (context, index) {
