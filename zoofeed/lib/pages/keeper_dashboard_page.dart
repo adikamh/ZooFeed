@@ -1034,15 +1034,40 @@ class StaffHomeTab extends StatelessWidget {
                         icon: Icons.restaurant,
                         label: 'Beri Makan',
                         color: Colors.green,
-                        onTap: () {
-                          if (todaysTasks.isNotEmpty) {
-                            onQuickFeed(todaysTasks.first);
-                          } else {
+                        onTap: () async {
+                          if (todaysTasks.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Tidak ada tugas pemberian makan saat ini'),
                               ),
                             );
+                            return;
+                          }
+
+                          final AnimalModel? selected = await showDialog<AnimalModel>(
+                            context: context,
+                            builder: (ctx) {
+                              return SimpleDialog(
+                                title: const Text('Pilih Hewan'),
+                                children: todaysTasks.map((a) {
+                                  return SimpleDialogOption(
+                                    onPressed: () => Navigator.pop(ctx, a),
+                                    child: ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: a.statusColor,
+                                        child: Icon(a.statusIcon, color: Colors.white, size: 18),
+                                      ),
+                                      title: Text(a.name),
+                                      subtitle: Text('${a.species} - ${a.enclosure}'),
+                                    ),
+                                  );
+                                }).toList(),
+                              );
+                            },
+                          );
+
+                          if (selected != null) {
+                            onQuickFeed(selected);
                           }
                         },
                       ),
